@@ -1,0 +1,107 @@
+name: ISI BURGER CI/CD Pipeline
+
+on:
+  push:
+    branches: [ ndeye_yacine_niass_burger ]
+  pull_request:
+    branches: [ ndeye_yacine_niass_burger ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: isiburger
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: passer
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+    - name: Checkout du code
+      uses: actions/checkout@v3
+      
+    - name: Configuration de PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_pgsql, dom, filter, gd, json, libxml, zip
+        coverage: none
+      
+    - name: Vérification de la version de PHP
+      run: php -v
+      
+    - name: Installation des dépendances Composer
+      run: composer install --prefer-dist --no-progress --no-suggest
+      
+    - name: Configuration de .env pour les tests
+      run: |
+        cp .env.example .env
+        echo "APP_NAME=Laravel
+        APP_ENV=local
+        APP_KEY=base64:CVzqBFLmboG0yrS7jdBBTkzfI48ClWJfYbMxUEMCGdU=
+        APP_DEBUG=true
+        APP_URL=http://localhost
+        
+        LOG_CHANNEL=stack
+        LOG_DEPRECATIONS_CHANNEL=null
+        LOG_LEVEL=debug
+        
+        DB_CONNECTION=pgsql
+        DB_HOST=localhost
+        DB_PORT=5432
+        DB_DATABASE=isiburger
+        DB_USERNAME=postgres
+        DB_PASSWORD=passer
+        
+        BROADCAST_DRIVER=log
+        CACHE_DRIVER=file
+        FILESYSTEM_DISK=local
+        QUEUE_CONNECTION=database
+        SESSION_DRIVER=file
+        SESSION_LIFETIME=120
+        
+        MAIL_MAILER=smtp
+        MAIL_HOST=localhost
+        MAIL_PORT=1025
+        MAIL_USERNAME=null
+        MAIL_PASSWORD=null
+        MAIL_ENCRYPTION=null
+        MAIL_FROM_ADDRESS=noreply@isiburger.com
+        MAIL_FROM_NAME=\"ISI Burger\"" > .env
+        php artisan key:generate
+        
+    - name: Exécution des migrations
+      run: php artisan migrate --force
+      
+    - name: Exécution des tests Laravel
+      run: php artisan test
+      
+    - name: Configuration de QEMU
+      uses: docker/setup-qemu-action@v2
+      
+    - name: Configuration de Docker Buildx
+      uses: docker/setup-buildx-action@v2
+      
+    - name: Connexion à Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: yacineniasse
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+        
+    - name: Construction et publication de l'image Docker
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: |
+          yacineniasse/isi-burger:latest
+          yacineniasse/isi-burger:${{ github.sha }}
