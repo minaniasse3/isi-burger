@@ -28,7 +28,7 @@ jobs:
       app:
         image: yacineniasse/isi-burger:latest  # L'image Docker de l'application
         ports:
-          - 8090:8085  # Rediriger le port 8000 du conteneur vers l'hôte
+          - 8000:8080  # Rediriger le port 8000 du conteneur vers l'hôte
         options: >-
           --health-cmd "curl --fail http://localhost:8000 || exit 1"
           --health-interval 10s
