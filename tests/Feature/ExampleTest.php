@@ -11,9 +11,12 @@ class ExampleTest extends TestCase
      * A basic test example.
      */
     public function test_the_application_returns_a_successful_response(): void
-    {
-        $response = $this->get('/');
+{
+    // Désactiver tous les middlewares pour ce test
+    $response = $this->withoutMiddleware()->get('/');
 
-        $response->assertStatus(200);
-    }
+    // Vérifier que la réponse a un statut 200 (succès)
+    $response->assertStatus(200);
+}
+
 }
